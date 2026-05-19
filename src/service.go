@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 )
@@ -27,7 +28,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = fmt.Fprint(w, `<!doctype html>
+	if _, err := fmt.Fprint(w, `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -81,5 +82,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
     </table>
   </section>
 </body>
-</html>`)
+</html>`); err != nil {
+		log.Printf("failed to write homepage response: %v", err)
+	}
 }
