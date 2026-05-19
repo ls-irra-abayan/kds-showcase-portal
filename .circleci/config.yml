@@ -1,0 +1,168 @@
+version: 2.1
+
+orbs:
+  docker-helm: lsk/docker-helm@1.3
+  fleet: lsk/fleet@1.2
+  vessel: lsk/vessel@0.3
+
+anchors:
+  only-main-branch: &only-main-branch
+    filters:
+      branches:
+        only:
+          - main
+  all-app-names: &all-app-names
+    - go-service-template
+
+parameters:
+  deploy:
+    type: boolean
+    default: false
+  cluster:
+    type: enum
+    default: "lskstg"
+    enum:
+      - "lskstg"
+      - "lsktrial"
+
+jobs:
+  build-app:
+    parameters:
+      service_name:
+        description: Service name
+        type: string
+    docker:
+      - image: cimg/go:1.18
+    steps:
+      - checkout
+      - run:
+          working_directory: src
+          command: |
+            VERSION=$(git rev-parse --short HEAD)
+            BUILDTIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+            CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o << parameters.service_name >> -ldflags="-s -w -X main.Version=${VERSION} -X main.BuildTime=${BUILDTIME}" .
+      - persist_to_workspace:
+          root: .
+          paths:
+            - src/<< parameters.service_name >>
+
+  tests:
+    docker:
+      - image: cimg/go:1.18
+    steps:
+      - checkout
+      - run:
+          name: Checking formatting
+          working_directory: src
+          command: $(exit $(go fmt ./ | wc -l))
+      - run:
+          name: Running unit tests
+          working_directory: src
+          command: go test ./ -race
+
+  codecov:
+    docker:
+      - image: cimg/go:1.18
+    steps:
+      - checkout
+      - run:
+          name: Generating test coverage
+          working_directory: src
+          command: go test ./... -race -coverprofile=coverage.txt -covermode=atomic
+      - run:
+          name: Sending to codecov
+          command: scripts/codecov -t "$CODECOV_TOKEN"
+
+workflows:
+  version: 2
+  ci:
+    unless: << pipeline.parameters.deploy >>
+    jobs:
+      - tests:
+          name: Running unit tests
+      - codecov:
+          name: Generating test coverage
+          requires:
+            - Running unit tests
+      - build-app:
+          name: "build: go-service-template"
+          service_name: "go-service-template"
+          requires:
+            - Running unit tests
+      - docker-helm/build-test-push:
+          name: "build-test-push: go-service-template"
+          context: global
+          image-name: go-service-template
+          requires:
+            - "build: go-service-template"
+          pre-steps:
+            - checkout
+            - attach_workspace:
+                at: /tmp
+            - run: mv /tmp/src/cmd/go-service-template/go-service-template .
+          build-additional-arguments: >-
+            --build-arg COMPONENT_NAME="go-service-template"
+      - docker-helm/push-helm-chart:
+          name: "push-helm-chart: << matrix.matrix-name >>"
+          context: global
+          run-linter: false
+          matrix:
+            parameters:
+              matrix-name: *all-app-names
+            alias: "push-helm-chart"
+          chart-path: "./charts/<< matrix.matrix-name >>"
+          requires:
+            - "build-test-push: go-service-template"
+
+      - fleet/trigger-update:
+          context: global
+          requires:
+            - "push-helm-chart"
+
+      - vessel/deploy:
+          name: "vessel-deploy-staging: << matrix.chart-name >>"
+          context: global
+          matrix:
+            parameters:
+              chart-name: *all-app-names
+            alias: "vessel-deploy-staging"
+          requires:
+            - "push-helm-chart"
+          cluster-name: "lskstg"
+          <<: *only-main-branch
+
+      - vessel/deploy:
+          name: "vessel-deploy-trial: << matrix.chart-name >>"
+          context: global
+          matrix:
+            parameters:
+              chart-name: *all-app-names
+            alias: "vessel-deploy-trial"
+          requires:
+            - "push-helm-chart"
+          cluster-name: "lsktrial"
+          <<: *only-main-branch
+
+      - vessel/deploy:
+          name: "vessel-deploy-prod: << matrix.chart-name >>"
+          context: global
+          matrix:
+            parameters:
+              chart-name: *all-app-names
+          requires:
+            - "vessel-deploy-staging"
+            - "vessel-deploy-trial"
+          cluster-name: "lskprod"
+          <<: *only-main-branch
+
+  vessel-deploy:
+    when: << pipeline.parameters.deploy >>
+    jobs:
+      - vessel/deploy:
+          name: "deploy-<< pipeline.parameters.cluster >>-<< matrix.chart-name >>"
+          context: global
+          cluster-name: "<< pipeline.parameters.cluster >>"
+          chart-version-source: "commit-sha"
+          matrix:
+            parameters:
+              chart-name: *all-app-names

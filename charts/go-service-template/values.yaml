@@ -1,0 +1,337 @@
+replicaCount: 1
+
+nameOverride: go-service-template # Overrides what would otherwise be {Chart.Name}
+fullnameOverride: go-service-template # Used for the service name
+
+image:
+  name: null # Default is .Chart.Name
+  pullPolicy: IfNotPresent
+  tag: null # Default is appVersion.
+  registry: null # Default is based on environment
+  useEcr: null # Set to true in ephemeral by default if you don't set the registry. Set to true to use the {temp,release}/service/image convention.
+
+
+###############################################
+######## CONTAINER CONFIGURATION START ########
+###############################################
+
+# Will be overridden at deployment time
+environment:
+  name: "stg"
+
+
+# Custom configuration for the service
+
+# Define each database values to create a formatted connection url string.
+#databases:
+#  someAlias:
+#    javaDriver: "jdbc:mysql" # for non-java services set to empty string
+#    host: '{{ include "env-lib.get" (list $ "databases.ape.host") }}'
+#    port: '{{ include "env-lib.get" (list $ "databases.ape.port") }}'
+#    schemaName: '{{ include "env-lib.get" (list $ "databases.ape.dbName") }}'
+#    queryArgs: ""
+
+
+
+envVars: {}
+#  ENV_VAR_1: "value"
+#  ENV_VAR_2: "{{ $.Values.someValue2 }}"
+#  ENV_VAR_3: "{{ tpl $.Values.someValue3 $ }}"
+#  SPRING_DATASOURCE_URL: '{{ include "starter-lib.java-mysql-url" (list $ "someAlias") }}' # is based on values in databases.someAlias
+#  KAFKA_BROKERS: '{{ include "starter-lib.kafka-brokers" $ }}'
+#  S3_ENDPOINT: '{{ include "env-lib.get" (list $ "s3.endpoint") }}'
+#  SECURITY_OAUTH2_CLIENT_USER_AUTHORIZATION_URI: '{{ include "starter-lib.nightswatchPublicUrl" $ }}'
+#  FLEET_ENVIRONMENT_NAME: '{{ include "starter-lib.fleet-environment-name" $ }}'
+#  env variables for projects created from spring-boot-microservice-template
+#  OAUTH_INTROSPECTION_URL: 'http://nightswatch/oauth/check_token'
+#  OAUTH_USER_INFO_URL: 'http://nightswatch/oauth/userinfo'
+#  OAUTH_TOKEN_URL: 'http://nightswatch/oauth/token'
+#  OAUTH_AUTHORIZE_URL: '{{ include "starter-lib.nightswatch-public-url" $ }}/oauth/authorize'
+#  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI: '{{ include "env-lib.get" (list $ "oauthProvider.ls-auth0.uris.base") }}'
+#  LSK_ENVIRONMENT: '{{ include "env-lib.get" (list $ "lskEnvironment") }}'  # DEPRECATED! try not to use it! Instead:
+#  Instead of lskEnvironment, use:
+#  KAFKA_TOPIC_PREFIX: '{{ include "env-lib.get" (list $ "kafka.topicPrefix") }}'
+#  KAFKA_TOPIC_FOOBAR: '{{ include "env-lib.get" (list $ "kafka.topics.blocksAuthenticated.name") }}'
+#  ES_SUFFIX: '{{ include "env-lib.get" (list $ "elasticsearch.indexSuffix") }}'
+
+externalSecretVars: {}
+#  ENV_VAR_FROM_SECRET_IN_AWS_SECRET_MANAGER_1: {}
+#  ENV_VAR_FROM_SECRET_IN_CUSTOM_K8S_SECRET_2:
+#    secretName: secretNameAsCreatedByThirdPartyChart
+#    secretKey: secretKey
+
+# DEPRECATED:
+#   use (externalSecretVars & AWS Secrets Manager & external-secrets.io) [see above]
+#   instead of (secretVars & Vault secrets & secret fetcher)
+# secretVars: {}
+
+extraContainers: {}
+#   00-diffy:
+#     enabled: true
+#     image:
+#       name: diffy
+#       pullPolicy: Always
+#       tag: '11-badbeef'
+#       registry: null
+#       useEcr: true
+#     envVars: {}
+#     secretVars: {} # Refer to container secret vars for syntax
+#     externalSecretVars: {} # Refer to container secret vars for syntax
+#     volumeMounts: {}
+
+initContainers: {}
+#   00-kafka-init:
+#     enabled: true
+#     image:
+#       name: kafka-init
+#       pullPolicy: Always
+#       tag: '{{ include "env-lib.get" (list $ "kafkaInit.tag") }}'
+#       registry: '{{ include "env-lib.get" (list $ "kafkaInit.registry") }}'
+#       useEcr: false
+#     envVars: # Refer to container env vars for syntax
+#       LSK_ENVIRONMENT: '{{ include "env-lib.get" (list $ "kafka.topicPrefix") | trimSuffix "-" }}'
+#       KAFKA_BOOTSTRAPSERVERS: '{{ include "starter-lib.kafka-brokers" $ }}'
+#       KAFKAINIT_TOPIC_WAITFOR: "..."
+#     externalSecretVars: {} # Refer to container externalSecretVars for syntax
+#     volumeMounts: {}
+
+containerPorts:
+  - name: http
+    containerPort: 8080
+
+#livenessProbe:
+#  enabled: false
+#  path:  "/some/relative/url"
+#  port: http
+#  initialDelaySeconds: 60
+#  periodSeconds: 20
+#  failureThreshold: 3
+#  successThreshold: 1
+#  timeoutSeconds: 1
+
+#readinessProbe:
+#  enabled: false
+#  path: "/some/relative/url"
+#  port: http
+#  initialDelaySeconds: 60
+#  periodSeconds: 10
+#  failureThreshold: 3
+#  successThreshold: 1
+#  timeoutSeconds: 1
+
+#startupProbe:
+#  enabled: false
+#  path: "/some/relative/url"
+#  port: http
+#  initialDelaySeconds: 60
+#  periodSeconds: 10
+#  failureThreshold: 3
+#  successThreshold: 1
+#  timeoutSeconds: 1
+
+# To set up extra volumes, you can use these values:
+#   volumes:
+#      00-working-volume:
+#        name: working-volume
+#        emptyDir: {}
+#   volumeMounts:
+#      00-working-volume-mount:
+#        name: working-volume
+#        mountPath: /working-volume
+# The volumes defined here can also be used in the initContainer's volumeMounts
+volumes: {}
+volumeMounts: {}
+
+java:
+  # Set "containerPort: <port here>" to enable remote debug for this microservice (java based only)
+  # kubectl access is required to forward the port to the local machine
+  jvmDebug: {}
+    # Like here
+    # containerPort: 5005
+
+  # Set "containerPort: <port here>" to enable remote JMX monitoring for this microservice (java based only)
+  # kubectl access is required to forward the port to the local machine
+  jmxMonitoring: {}
+    # Like here
+    # containerPort: 9001
+
+# terminationGracePeriodSeconds: 60
+# restartPolicy: Always
+
+###############################################
+######## CONTAINER CONFIGURATION END ##########
+###############################################
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # The role name (<name>) from env-lib's <environment>.roles.<name>
+  # Setting this will set the "eks.amazonaws.com/role-arn" annotation
+  awsRole: ""
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+  role: # see: https://kubernetes.io/docs/reference/access-authn-authz/rbac/#role-example
+    create: false
+    namespace: null
+    rules:
+    - apiGroups: []
+      resources: []
+      verbs: []
+  clusterRole:  # see: https://kubernetes.io/docs/reference/access-authn-authz/rbac/#clusterrole-example
+    create: false
+    rules:
+    - apiGroups: []
+      resources: []
+      verbs: []
+
+
+podAnnotations: {}
+
+podLabels: {}
+  # This setting will add the `com.lightspeed.helm/node-exclusive` label to the pod.
+  # The label is used to indicate that the service cannot be scaled to more than 1 replica.
+  # This label is used in conjunction with `soft-node-exclusive-anti` affinity preset to ensure
+  # that the Kubernetes scheduler only schedules one service with this label per node.
+  # com.lightspeed.helm/node-exclusive: "true"
+
+# Those secure defaults for containers are designed to work out of the box with our base images
+# See https://docs.lsk.lightspeed.app/Tutorials/rootless-services/ for details
+podSecurityContext:
+  runAsGroup: 3000
+  runAsUser: 1000
+
+# Those secure defaults for pods are designed to work out of the box with our base images
+# See https://docs.lsk.lightspeed.app/Tutorials/rootless-services/ for details
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  # capabilities:
+  #   drop:
+  #   - ALL
+
+service:
+  type: ClusterIP
+  annotations: {}
+  ports:
+    - port: 80
+      targetPort: http
+      name: http
+
+headlessService: {}
+#  enabled: false
+#  type: ClusterIP
+#  ports:
+#    - port: 5701
+#      targetPort: hazelcast
+#      name: hazelcast
+
+# Deprecated! Use "default" ingress definition of "ingresses" dict below
+ingress:
+  enabled: false
+  stickySessions: false
+  serverAlias: '{{ include "starter-lib.ingress-alias" ( list $  "default" ) }}'
+  configurationSnippet: "httpsWorkaround"
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  hosts:
+    - host: '{{ include "env-lib.get" ( list $ "domains.default.ingressHost" ) }}'
+      paths: ["/"]
+  tls: []
+
+# Allows specifying multiple ingresses definitions.
+ingresses:
+  default:
+    enabled: false
+    stickySessions: false
+    serverAlias: '{{ include "starter-lib.ingress-alias" ( list $  "default" ) }}'
+    configurationSnippet: "httpsWorkaround"
+    annotations:
+      kubernetes.io/ingress.class: nginx
+    hosts:
+      - host: '{{ include "env-lib.get" ( list $ "domains.default.ingressHost" ) }}'
+        paths: ["/"]
+    tls: []
+
+resources:
+  requests:
+    memory: 600Mi # Change if you're doing something fancy
+  #   cpu: 100m
+  # limits:
+  #   cpu: 100m
+  #   memory: 1200Mi
+
+rollingUpdate:
+  maxSurge: "25%"
+  maxUnavailable: "25%"
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+# To disable all presets:
+#affinityPresets: []
+# To enable some presets (preset names are in starter-lib/templates/_affinity.tpl)
+#affinityPresets: ["hard-anti", "soft-anti", "soft-node-exclusive-anti"]
+affinityPresets: ["default"]
+# extra affinity is merged with the presets
+extraAffinity: {}
+
+# disable PDB with
+# pdb: null
+pdb:
+  minAvailable: 1
+#  maxUnavailable: 1 # choose maxUnavailable or minAvailable
+
+# To disable all presets:
+#topologySpreadPresets: []
+# To enable some presets (preset names are in starter-lib/templates/_topology_spread_presets.yaml)
+#topologySpreadPresets: ["soft", "some-other"]
+topologySpreadPresets: ["default"]
+# Extra constraint can be added here, must be a dict.
+extraTopologySpreadConstraint: {}
+
+
+# Reroute traffic for this pod
+hostAliases: '{{- include "starter-lib.blocked-domains" $ }}'
+
+# serviceMapping sets the DD_SERVICE_MAPPING env var to separate things relevant to this service in the APM UI
+# serviceMapping:
+#   mysql: "{{ $.Release.Name }}-mysql"
+#   redis: "{{ $.Release.Name }}-redis"
+#   kafka: "{{ $.Release.Name }}-kafka"
+apm:
+  datadog:
+    enabled: false
+    environment: ""
+    serviceMapping: {}
+
+priorityClass:
+  enabled: false
+  annotations: {}
+  value: 9001
+  preemptionPolicy: PreemptLowerPriority
+  description: Priority class for go-service-template
+
+openapi:
+  # When enabled, this will create the OpenAPI custom resource.  Please create a symlink to the
+  # [repo]/apidoc/[chart-name] dir for this chart so the file gets added to the OpenAPI CR properly like this:
+  # cd charts/[chart-name]
+  # ln -s ../../apidoc/[chart-name] apidoc
+  #
+  # Results in: [repo]/charts/[chart-name]/apidoc --> ../../apidoc/[chart-name]
+  enabled: false
+  # filename: openapi-manual.yaml
+  # Priority is a negative or positive integer.  Allows us to specify the order at which documents
+  # override each other, where the document with a higher priority value overwrites lower priority documents.
+  # priority: 0
