@@ -1,0 +1,15 @@
+apiVersion: v2
+appVersion: 0.1.0
+description: Service Name
+name: go-service-template
+type: application
+version: 0.1.0
+dependencies:
+  - name: starter-lib
+    repository: "oci://809245501444.dkr.ecr.eu-central-1.amazonaws.com"
+    version: '>=0.2,<1.0'
+  - name: env-lib
+    repository: "oci://809245501444.dkr.ecr.eu-central-1.amazonaws.com"
+    version: '>=0.3,<1.0'
+    import-values:
+      - environmentConfig
