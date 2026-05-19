@@ -73,7 +73,7 @@ func main() {
 
 	fmt.Printf("Kitchen Display System showcase is running on port %s\n", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		panic(err)
+		log.Fatalf("server failed: %v", err)
 	}
 }
 
