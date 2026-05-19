@@ -63,10 +63,12 @@ const homePageHTML = `<!doctype html>
 </body>
 </html>`
 
+const defaultPort = "8080"
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = defaultPort
 	}
 
 	http.HandleFunc("/", homeHandler)
