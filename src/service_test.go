@@ -28,7 +28,7 @@ func TestHomeHandlerReturnsKDSShowcaseContent(t *testing.T) {
 
 	for _, expected := range expectedContent {
 		if !strings.Contains(body, expected) {
-			t.Fatalf("expected response body to include %q", expected)
+			t.Errorf("expected response body to include %q", expected)
 		}
 	}
 }

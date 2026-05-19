@@ -7,28 +7,7 @@ import (
 	"os"
 )
 
-func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	http.HandleFunc("/", homeHandler)
-
-	fmt.Printf("Kitchen Display System showcase is running on port %s\n", port)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		panic(err)
-	}
-}
-
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if _, err := fmt.Fprint(w, `<!doctype html>
+const homePageHTML = `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -82,7 +61,30 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
     </table>
   </section>
 </body>
-</html>`); err != nil {
+</html>`
+
+func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	http.HandleFunc("/", homeHandler)
+
+	fmt.Printf("Kitchen Display System showcase is running on port %s\n", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		panic(err)
+	}
+}
+
+func homeHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if _, err := fmt.Fprint(w, homePageHTML); err != nil {
 		log.Printf("failed to write homepage response: %v", err)
 	}
 }
