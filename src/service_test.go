@@ -33,7 +33,7 @@ func TestHomeHandlerReturnsKDSShowcaseContent(t *testing.T) {
 	}
 }
 
-func TestHomeHandlerReturnsNotFoundForUnknownPath(t *testing.T) {
+func TestHomeHandlerReturnsNotFoundForNonRootPath(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/unknown", nil)
 	recorder := httptest.NewRecorder()
 
